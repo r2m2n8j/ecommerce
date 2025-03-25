@@ -7,7 +7,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class CategoryServiceImpl implements CategoryService{
@@ -26,7 +26,7 @@ public class CategoryServiceImpl implements CategoryService{
 
     @Override
     public String deleteCategory(Long categoryID) {
-        /*for(int i=0;i<categories.size();i++){
+        /* for(int i=0;i<categories.size();i++){
             Category category = categories.get(i);
             if(Objects.equals(category.getCategoryId(), categoryID)){
                 categories.remove(category);
@@ -38,9 +38,24 @@ public class CategoryServiceImpl implements CategoryService{
                 .findFirst()
                 .orElseThrow( () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category of categoryId : "+categoryID +" Not found !"));
 
-        /*if(category == null) return "Category of categoryId : "+categoryID +" Not found !";
+        /*if(category == null) return "Category of categoryId : " +categoryID +" Not found !";
         */
         categories.remove(category);
         return "Category of categoryId : "+ categoryID +" deleted Successfully !!";
+    }
+
+    @Override
+    public Category updateCategory(Category category, Long categoryId) {
+        Optional<Category> optionalCategory = categories.stream()
+                .filter(cate -> cate.getCategoryId().equals(categoryId))
+                .findFirst();
+
+        if(optionalCategory.isPresent()){
+            Category presentCategory = optionalCategory.get();
+            presentCategory.setCategoryName(category.getCategoryName());
+            return presentCategory;
+        }else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category is not present inside the list");
+        }
     }
 }
