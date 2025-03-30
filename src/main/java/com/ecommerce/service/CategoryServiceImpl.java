@@ -1,5 +1,7 @@
 package com.ecommerce.service;
 
+import com.ecommerce.exceptions.APIException;
+import com.ecommerce.exceptions.ResourceNotFoundException;
 import com.ecommerce.model.Category;
 import com.ecommerce.repositories.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,13 +25,21 @@ public class CategoryServiceImpl implements CategoryService{
     @Override
     public List<Category> getAllCategories() {
 //        return categories;
-        return categoryRepository.findAll();
+        List<Category> categories = categoryRepository.findAll();
+        if(categories.isEmpty()){
+            throw new APIException("Categories does not exist!");
+        }
+        return categories;
     }
 
     @Override
     public void createCategory(Category category) {
 //        category.setCategoryId(nextId++);
 //        categories.add(category);
+        Category savedCategory = categoryRepository.findByCategoryName(category.getCategoryName());
+        if(savedCategory!=null){
+            throw new APIException("Category "+ category.getCategoryName()+ " already exist!");
+        }
         categoryRepository.save(category);
     }
 
@@ -53,7 +63,8 @@ public class CategoryServiceImpl implements CategoryService{
         /*if(category == null) return "Category of categoryId : " +categoryID +" Not found !";
         */
         Category category = categoryRepository.findById(categoryID)
-                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category of categoryId : "+categoryID + " Not found !"));
+                .orElseThrow(()-> new ResourceNotFoundException("Category", "categoryId", categoryID));
+//                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category of categoryId : "+categoryID + " Not found !"));
 //        categories.remove(category);
 
         categoryRepository.delete(category);
@@ -83,7 +94,8 @@ public class CategoryServiceImpl implements CategoryService{
             categoryRepository.save(presentCategory);
             return presentCategory;
         }else{
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category is not present inside the List");
+            throw new ResourceNotFoundException("Category", "categoryId", categoryId);
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category is not present inside the List");
         }
     }
 }
