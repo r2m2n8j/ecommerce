@@ -16,11 +16,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> myMethodArgumentNotValidException(MethodArgumentNotValidException e){
         Map<String, String> response = new HashMap<>();
+        System.out.println("Inside the GlobalExceptionHandler 1");
         e.getBindingResult().getAllErrors().forEach(err -> {
             String fieldName = ((FieldError)err).getField();
             String message = err.getDefaultMessage();
             response.put(fieldName, message);
         });
+        System.out.println("Inside the GlobalException 2");
         return new ResponseEntity<Map<String, String>>(response,
                 HttpStatus.BAD_REQUEST);
     }

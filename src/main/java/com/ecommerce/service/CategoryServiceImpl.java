@@ -3,13 +3,13 @@ package com.ecommerce.service;
 import com.ecommerce.exceptions.APIException;
 import com.ecommerce.exceptions.ResourceNotFoundException;
 import com.ecommerce.model.Category;
+import com.ecommerce.payload.CategoryDTO;
+import com.ecommerce.payload.CategoryResponse;
 import com.ecommerce.repositories.CategoryRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,28 +19,41 @@ public class CategoryServiceImpl implements CategoryService{
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
 //    List<Category> categories = new ArrayList<>();
     private Long nextId = 1L;
 
     @Override
-    public List<Category> getAllCategories() {
+    public CategoryResponse getAllCategories() {
 //        return categories;
         List<Category> categories = categoryRepository.findAll();
         if(categories.isEmpty()){
             throw new APIException("Categories does not exist!");
         }
-        return categories;
+        List<CategoryDTO> categoryDTOList = categories.stream()
+                .map(category -> modelMapper.map(category, CategoryDTO.class))
+                .toList();
+
+        CategoryResponse categoryResponse = new CategoryResponse();
+        categoryResponse.setContent(categoryDTOList);
+        return categoryResponse;
     }
 
     @Override
     public void createCategory(Category category) {
 //        category.setCategoryId(nextId++);
 //        categories.add(category);
+        System.out.println("Inside the Service 1");
         Category savedCategory = categoryRepository.findByCategoryName(category.getCategoryName());
         if(savedCategory!=null){
+            System.out.println("Inside the service if block 2");
             throw new APIException("Category "+ category.getCategoryName()+ " already exist!");
         }
+        System.out.println("Inside the service 3");
         categoryRepository.save(category);
+        System.out.println("Inside the service 4");
     }
 
     @Override
