@@ -8,6 +8,10 @@ import com.ecommerce.payload.CategoryResponse;
 import com.ecommerce.repositories.CategoryRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,9 +30,16 @@ public class CategoryServiceImpl implements CategoryService{
     private Long nextId = 1L;
 
     @Override
-    public CategoryResponse getAllCategories() {
+    public CategoryResponse getAllCategories(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
 //        return categories;
-        List<Category> categories = categoryRepository.findAll();
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Page<Category> categoryPage = categoryRepository.findAll(pageDetails);
+        List<Category> categories = categoryPage.getContent();
+//        List<Category> categories = categoryRepository.findAll();
         if(categories.isEmpty()){
             throw new APIException("Categories does not exist!");
         }
@@ -38,26 +49,30 @@ public class CategoryServiceImpl implements CategoryService{
 
         CategoryResponse categoryResponse = new CategoryResponse();
         categoryResponse.setContent(categoryDTOList);
+        //Now I have to set all the pagination metadata inside the categoryResponse
+        categoryResponse.setPageNumber(categoryPage.getNumber());
+        categoryResponse.setPageSize(categoryPage.getSize());
+        categoryResponse.setTotalElements(categoryPage.getTotalElements());
+        categoryResponse.setTotalPages(categoryPage.getTotalPages());
+        categoryResponse.setLastPage(categoryPage.isLast());
         return categoryResponse;
     }
 
     @Override
-    public void createCategory(Category category) {
+    public CategoryDTO createCategory(CategoryDTO categoryDTO) {
 //        category.setCategoryId(nextId++);
 //        categories.add(category);
-        System.out.println("Inside the Service 1");
-        Category savedCategory = categoryRepository.findByCategoryName(category.getCategoryName());
-        if(savedCategory!=null){
-            System.out.println("Inside the service if block 2");
+        Category category = modelMapper.map(categoryDTO, Category.class);
+        Category categoryFound = categoryRepository.findByCategoryName(category.getCategoryName());
+        if(categoryFound!=null){
             throw new APIException("Category "+ category.getCategoryName()+ " already exist!");
         }
-        System.out.println("Inside the service 3");
-        categoryRepository.save(category);
-        System.out.println("Inside the service 4");
+        Category savedCategory = categoryRepository.save(category);
+        return modelMapper.map(savedCategory, CategoryDTO.class);
     }
 
     @Override
-    public String deleteCategory(Long categoryID) {
+    public CategoryDTO deleteCategory(Long categoryID) {
         /* for(int i=0;i<categories.size();i++){
             Category category = categories.get(i);
             if(Objects.equals(category.getCategoryId(), categoryID)){
@@ -81,11 +96,12 @@ public class CategoryServiceImpl implements CategoryService{
 //        categories.remove(category);
 
         categoryRepository.delete(category);
-        return "Category of categoryId : "+ categoryID +" deleted Successfully !!";
+//        return "Category of categoryId : "+ categoryID +" deleted Successfully !!";
+        return modelMapper.map(category, CategoryDTO.class);
     }
 
     @Override
-    public Category updateCategory(Category category, Long categoryId) {
+    public CategoryDTO updateCategory(CategoryDTO categoryDTO, Long categoryId) {
 //        List<Category> categories = categoryRepository.findAll();
 //        Optional<Category> optionalCategory = categories.stream()
 //                .filter(cate -> cate.getCategoryId().equals(categoryId))
@@ -101,11 +117,13 @@ public class CategoryServiceImpl implements CategoryService{
 //        }
         Optional<Category> optionalCategory = categoryRepository.findById(categoryId);
 
+        Category category = modelMapper.map(categoryDTO, Category.class);
         if(optionalCategory.isPresent()){
             Category presentCategory = optionalCategory.get();
             presentCategory.setCategoryName(category.getCategoryName());
             categoryRepository.save(presentCategory);
-            return presentCategory;
+//            return presentCategory;
+            return modelMapper.map(presentCategory, CategoryDTO.class);
         }else{
             throw new ResourceNotFoundException("Category", "categoryId", categoryId);
 //            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category is not present inside the List");
